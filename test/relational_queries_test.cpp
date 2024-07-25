@@ -9,6 +9,7 @@
 #include <chrono>
 #include <omp.h>
 #include <unistd.h>
+#include <fstream>
 
 using namespace arcedb;
 using namespace seal;
@@ -390,6 +391,83 @@ void relational_query1(size_t num)
     
 }
 
+using namespace std;
+
+inline vector<string> split(string str, string delimiter)
+{
+    vector<string> v;
+    if (!str.empty()) {
+        int start = 0;
+        do {
+            auto idx = str.find(delimiter, start);
+            if (idx == string::npos) {
+                break;
+            }
+
+            int length = idx - start;
+            v.push_back(str.substr(start, length));
+            start += (length + delimiter.size());
+        } while (true);
+        v.push_back(str.substr(start));
+    }
+ 
+    return v;
+}
+
+inline bool is_leap_year(int year) {
+    return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+}
+
+inline int days_in_month(int m, int year) { 
+    if(m==1 || m==3 || m==5 || m==7 || m==8 || m==10 || m==12 ) return 31;
+    if(m==2) return is_leap_year(year) ? 29 : 28;
+    return 30;
+}
+
+inline int date_to_int(int cur_date) {
+    int Y = cur_date / 10000;
+    int M = (cur_date / 100) % 100;
+    int D = cur_date % 100;
+    
+    int date = 0;
+    for(int y = 1970; y < Y; ++y) date += is_leap_year(y) ? 366 : 365;
+    for(int m = 1; m < M; ++m) date += days_in_month(m, Y);
+    return date + D;
+}
+
+inline int daysSinceJan1st1970(int date) {
+    return date_to_int(date) - date_to_int(19700101);
+}
+
+void grab_TPCH_data(std::vector<uint64_t>& quanlity_data, 
+    std::vector<uint64_t>& discount_data,
+    std::vector<uint64_t>& ship_data,
+    std::vector<double>& extendedprice_data,
+    std::vector<double>& discount_data_double, string filePath, int num_rows)
+{ 
+	ifstream file(filePath);
+	string line;
+    int index = 0;
+	if (file.is_open()) { 
+		while (getline(file, line) && index < num_rows) { 
+            vector<string> res = split(line, "|");
+            quanlity_data.push_back(stoi(res[4]));
+            extendedprice_data.push_back(stod(res[5]));
+            discount_data.push_back(int(stod(res[6]) * 100));
+            discount_data_double.push_back(stod(res[6]));
+            vector<string> date = split(res[10], "-");
+            int format_date = stoi(date[2]) + stoi(date[1]) * 100 + stoi(date[0]) * 10000;
+            ship_data.push_back(daysSinceJan1st1970(format_date));
+            index += 1;
+		}
+
+		file.close();
+	} 
+	else {
+		cerr << "Error while processing tpc-h data" << endl; 
+	}
+}
+
 /***
  * TPC-H Query 6
  * select
@@ -447,46 +525,97 @@ void relational_query6(size_t num)
     TLWELvl2 count_res;
 
     std::vector<double> revenue(num);
+    std::vector<double> discount_data_double(num), extended_price_data(num);
 
-    for (size_t i = 0; i < num; i++)
-    {
-        revenue[i] = revenue_message(engine);
-    }
+    grab_TPCH_data(quantity, discount, ship_date, extended_price_data,
+        discount_data_double, "/home/ubuntu/lineitem.tbl", num);
+
+    // for (size_t i = 0; i < num; i++)
+    // {
+    //     revenue[i] = revenue_message(engine);
+    // }
+
+    for (size_t i = 0; i < num; i++) 
+        revenue[i] = extended_price_data[i] * discount_data_double[i];
+
+    std::chrono::system_clock::time_point start, end;
+    start = std::chrono::system_clock::now();
     
     for (size_t i = 0; i < num; i++)
     {
         // Generate data
-        ship_date[i] = shipdate_message(engine);
-        discount[i] = discount_message(engine);
-        quantity[i] = quantity_message(engine);
+        // ship_date[i] = shipdate_message(engine);
+        // discount[i] = discount_message(engine);
+        // quantity[i] = quantity_message(engine);
         exponent_encrypt<P>(ship_date[i], 16, shipdate_ciphers[i], sk);
         exponent_encrypt<P>(discount[i], 16, discount_ciphers[i], sk);
         exponent_encrypt<P>(quantity[i], 16, quantity_ciphers[i], sk);
     }
 
-    std::chrono::system_clock::time_point start, end;
+    end = std::chrono::system_clock::now();
+    auto encryption_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    cout << "Time taken to encrypt the data (s): " << encryption_time / 1000.0 << endl;
+
     double filtering_time = 0, aggregation_time;
     start = std::chrono::system_clock::now();
 
-    #pragma omp parallel for num_threads(48)
+    std::chrono::system_clock::time_point s1, s2, s3, s4, s5, s6, s7, s8, s9;
+    uint64_t t1 = 0, t2 = 0, t3 = 0, t4 = 0, t5 = 0, t6 = 0, t7 = 0, t8 = 0, t9 = 0;
+
+    auto total_threading = 1;
+    #pragma omp parallel for num_threads(total_threading)
     for (size_t i = 0; i < num; i++)
     {
         
         TLWELvl1 pre_res;
+        s1 = std::chrono::system_clock::now();
         greater_than_tfhepp(shipdate_ciphers[i], predicate1_cipher, shipdate_ciphers[i].size(), filter_res[i], ek, sk);
+        t1 += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - s1).count();
+
+        s2 = std::chrono::system_clock::now();
         less_than_tfhepp(shipdate_ciphers[i], predicate2_cipher, shipdate_ciphers[i].size(), pre_res, ek, sk);
+        t2 += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - s2).count();
+
+        s3 = std::chrono::system_clock::now();
         TFHEpp::HomAND(filter_res[i], pre_res, filter_res[i], ek);
+        t3 += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - s3).count();
+
+        s4 = std::chrono::system_clock::now();
         greater_than_tfhepp(discount_ciphers[i], predicate3_cipher, discount_ciphers[i].size(), pre_res, ek, sk);
+        t4 += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - s4).count();
+
+        s5 = std::chrono::system_clock::now();
         TFHEpp::HomAND(filter_res[i], pre_res, filter_res[i], ek);
+        t5 += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - s5).count();
+
+        s6 = std::chrono::system_clock::now();
         less_than_tfhepp(discount_ciphers[i], predicate4_cipher, discount_ciphers[i].size(), pre_res, ek, sk);
+        t6 += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - s6).count();
+
+        s7 = std::chrono::system_clock::now();
         TFHEpp::HomAND(filter_res[i], pre_res, filter_res[i], ek);
+        t7 += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - s7).count();
+
+        s8 = std::chrono::system_clock::now();
         less_than_tfhepp(quantity_ciphers[i], predicate5_cipher, quantity_ciphers[i].size(), pre_res, ek, sk);
+        t8 += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - s8).count();
+
+        s9 = std::chrono::system_clock::now();
         lift_and_and(filter_res[i], pre_res, filter_res[i], 29, ek, sk);
-        
+        t9 += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - s9).count();  
     }
     end = std::chrono::system_clock::now();
-
     filtering_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    cout << "1st Sub Predicate Evaluation Time (s): " << t1 / 1000.0 << std::endl;
+    cout << "2nd Sub Predicate Evaluation Time (s): " << t2 / 1000.0 << std::endl;
+    cout << "3rd Sub Predicate Evaluation Time (s): " << t3 / 1000.0 << std::endl;
+    cout << "4th Sub Predicate Evaluation Time (s): " << t4 / 1000.0 << std::endl;
+    cout << "5th Sub Predicate Evaluation Time (s): " << t5 / 1000.0 << std::endl;
+    cout << "6th Sub Predicate Evaluation Time (s): " << t6 / 1000.0 << std::endl;
+    cout << "7th Sub Predicate Evaluation Time (s): " << t7 / 1000.0 << std::endl;
+    cout << "8th Sub Predicate Evaluation Time (s): " << t8 / 1000.0 << std::endl;
+    cout << "9th Sub Predicate Evaluation Time (s): " << t9 / 1000.0 << std::endl;
+    cout << "Predicate Evaluation Time (s): " << filtering_time / 1000.0 << std::endl;
 
     std::vector<uint64_t> plain_filter_res(num);
     uint64_t plain_agg_res = 0;
@@ -550,13 +679,21 @@ void relational_query6(size_t num)
     // conversion
     std::cout << "Starting Conversion..." << std::endl;
     seal::Ciphertext result;
+    double LWEToRLWEtime = 0, homRoundTime = 0;
     start = std::chrono::system_clock::now();
     LWEsToRLWE(result, filter_res, pre_key, scale, std::pow(2., modq_bits), std::pow(2., modulus_bits - modq_bits), ckks_encoder, galois_keys, relin_keys, evaluator, context);
+    LWEToRLWEtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start).count();
     HomRound(result, result.scale(), ckks_encoder, relin_keys, evaluator, decryptor, context);
     end = std::chrono::system_clock::now();
     aggregation_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    homRoundTime = aggregation_time - LWEToRLWEtime;
+    std::cout << "LWEToRLWE in seconds: " << LWEToRLWEtime / 1000.0 << endl;
+    std::cout << "HomRound in seconds: " << homRoundTime / 1000.0 << endl;
     seal::Plaintext plain;
     std::vector<double> computed(slots_count);
+    stringstream resp_size;
+    result.save(resp_size);
+    cout << "Response size (bytes): " << resp_size.str().size() << endl;
     decryptor.decrypt(result, plain);
     seal::pack_decode(computed, plain, ckks_encoder);
 
@@ -593,6 +730,7 @@ void relational_query6(size_t num)
     }
     end = std::chrono::system_clock::now();
     aggregation_time += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    std::cout << "ciphertext sum in seconds: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0 << " seconds" << endl;
     std::vector<double> agg_result(slots_count);
     decryptor.decrypt(result, plain);
     seal::pack_decode(agg_result, plain, ckks_encoder);
@@ -1095,11 +1233,11 @@ void relational_query14(size_t num)
 
 int main()
 {
-    size_t num = 32768;
-    relational_query1(num);
+    size_t num = 512;
+    // relational_query1(num);
     relational_query6(num);
-    relational_query12(num);
-    relational_query14(num);
+    // relational_query12(num);
+    // relational_query14(num);
 }
 
 
