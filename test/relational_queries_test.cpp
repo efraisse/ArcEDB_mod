@@ -1233,7 +1233,7 @@ void relational_query14(size_t num)
 
 int main()
 {
-    size_t num = 512;
+    size_t num = 1 << 12;
     // relational_query1(num);
     relational_query6(num);
     // relational_query12(num);

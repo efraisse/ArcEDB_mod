@@ -64,6 +64,8 @@ void compare_batch_16_test()
     
     // Batch Bootstrap
 
+    std::cout << "GETS HERE" << std::endl;
+
     size_t rlwe_poly_modulus_degree = 32768;
     EncryptionParameters rlwe_parms(scheme_type::bfv);
     
@@ -82,6 +84,8 @@ void compare_batch_16_test()
     Decryptor rlwe_decryptor(rlwe_context, rlwe_secret_key);
     BatchEncoder rlwe_batch_encoder(rlwe_context);
 
+    std::cout << "GETS HERE 2" << std::endl;
+
     // Linear Transform key generate
     LinearTransformKey eval_key;
     std::vector<int64_t> lwe_key_values;
@@ -92,6 +96,8 @@ void compare_batch_16_test()
     generate_slot_to_coeff_matrix(matrix, rlwe_context, rlwe_batch_encoder);
     // read_slot_to_coeff_matrix(matrix, rlwe_batch_encoder);
     std::vector<std::vector<Plaintext>> pre_plains;
+
+    std::cout << "GETS HERE 3" << std::endl;
 
     auto context_data = rlwe_context.first_context_data();
     while (context_data)
@@ -105,16 +111,17 @@ void compare_batch_16_test()
     generate_slot_to_coeff_plain(context_data->parms_id(), matrix, pre_plains, rlwe_context, rlwe_batch_encoder, rlwe_evaluator);
     matrix.clear();
 
-
     SecretKey pad_lwe_secret_key;
     KSwitchKeys rlwe_keys_switch_key;
     try
     {
+        std::cout << "GETS HERE 4" << std::endl;
         generate_key_switch_key(lwe_secret_key, lwe_context, rlwe_secret_key, rlwe_context, pad_lwe_secret_key, rlwe_keys_switch_key);
         std::cout << "generate_key_switch_key passed" <<std::endl;
     }
     catch(const std::exception& e)
     {
+        std::cout << "GETS HERE 5" << std::endl;
         std::cout << "Location: " << __FILE__ << ":" << __LINE__ << " (" << __func__ << ")\n";
         std::cerr << e.what() << '\n';
     }

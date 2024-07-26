@@ -1,0 +1,37 @@
+Relational SQL Query6 Test: 
+--------------------------------------------------------
+Records: 256
+Time taken to encrypt the data (s): 0.08
+1st Sub Predicate Evaluation Time (s): 1.547
+2nd Sub Predicate Evaluation Time (s): 1.105
+3rd Sub Predicate Evaluation Time (s): 1.341
+4th Sub Predicate Evaluation Time (s): 1.294
+5th Sub Predicate Evaluation Time (s): 0.933
+6th Sub Predicate Evaluation Time (s): 1.203
+7th Sub Predicate Evaluation Time (s): 1.494
+8th Sub Predicate Evaluation Time (s): 1.277
+9th Sub Predicate Evaluation Time (s): 1.27
+Predicate Evaluation Time (s): 1.238
+Filtering finish
+Aggregation :
+Generating Parameters...
+Generating Conversion Key...
+Starting Conversion...
+LWEToRLWE in seconds: 23.916
+HomRound in seconds: 0.677
+Response size (bytes): 2707117
+Repack average error = 0.000000 ~ 2^-27.3
+Aggregating price and discount ..
+Remian modulus: 2
+ciphertext sum in seconds: 0.164 seconds
+Query Evaluation Time: 25995 ms
+Encrypted query result: 
+     revenue
+          -0
+Plain query result: 
+     revenue
+           0
+
+
+
+

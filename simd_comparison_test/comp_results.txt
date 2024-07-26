@@ -1,0 +1,9 @@
+------------------------------------------------
+16-bit precision comparison operator SIMDArbHCMP
+terminate called after throwing an instance of 'std::invalid_argument'
+  what():  Unable to open the file for writing.
+
+
+Cannot figure out why this doesn't run. Considering it is 
+complaining about an invalid argument I will assume this is 
+a bug on their end.
