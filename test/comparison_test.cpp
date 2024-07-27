@@ -131,17 +131,17 @@ void comparison_test_equality(size_t num_test, size_t p)
 
 int main()
 {
-    size_t test_num = 100;
+    size_t test_num = 10;
     comparison_test_relational(test_num,4);
-    // comparison_test_relational(test_num,8);
+    comparison_test_relational(test_num,8);
     comparison_test_relational(test_num,16);
     comparison_test_relational(test_num,32);
-    // comparison_test_relational(test_num,64);
+    comparison_test_relational(test_num,64);
     comparison_test_equality(test_num,4);
-    // comparison_test_equality(test_num,8);
+    comparison_test_equality(test_num,8);
     comparison_test_equality(test_num,16);
     comparison_test_equality(test_num,32);
-    // comparison_test_equality(test_num,64);
+    comparison_test_equality(test_num,64);
     
     
     

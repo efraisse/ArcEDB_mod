@@ -1,7 +1,16 @@
 -------------------------------------------------------------
 Test 4-bits relational comparison operator ArbHCMP:
 Error Time : 0
-Comparison Time : 0.02925ms
+Comparison Time : 0.0318ms
+-------------------------------------------------------------
+
+
+
+
+-------------------------------------------------------------
+Test 8-bits relational comparison operator ArbHCMP:
+Error Time : 0
+Comparison Time : 0.0301ms
 -------------------------------------------------------------
 
 
@@ -10,7 +19,7 @@ Comparison Time : 0.02925ms
 -------------------------------------------------------------
 Test 16-bits relational comparison operator ArbHCMP:
 Error Time : 0
-Comparison Time : 16.5ms
+Comparison Time : 17.1ms
 -------------------------------------------------------------
 
 
@@ -19,7 +28,16 @@ Comparison Time : 16.5ms
 -------------------------------------------------------------
 Test 32-bits relational comparison operator ArbHCMP:
 Error Time : 0
-Comparison Time : 50.34ms
+Comparison Time : 51.7ms
+-------------------------------------------------------------
+
+
+
+
+-------------------------------------------------------------
+Test 64-bits relational comparison operator ArbHCMP:
+Error Time : 0
+Comparison Time : 103.9ms
 -------------------------------------------------------------
 
 
@@ -27,10 +45,16 @@ Comparison Time : 50.34ms
 
 Test 4-bits equality comparison:
 Error Time : 0
-Comparison Time : 0.01864ms
+Comparison Time : 0.0195ms
+Test 8-bits equality comparison:
+Error Time : 0
+Comparison Time : 0.0188ms
 Test 16-bits equality comparison:
 Error Time : 0
-Comparison Time : 16.3ms
+Comparison Time : 17ms
 Test 32-bits equality comparison:
 Error Time : 0
-Comparison Time : 50.18ms
+Comparison Time : 51.4ms
+Test 64-bits equality comparison:
+Error Time : 0
+Comparison Time : 103.7ms
